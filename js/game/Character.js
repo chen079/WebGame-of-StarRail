@@ -472,7 +472,7 @@ class Character {
 
     ApplyDamage(target, dmg, type = DamageType.PHYSICAL) {
         const result = this.calculateFinalDamage(dmg, type);
-        target.takeDamage(result.damage, type);
+        target.takeDamage(result.damage, type, this);
         const critText = result.isCrit ? " (暴击!)" : "";
         this.Log(`${this.name}对${target.name}造成${result.damage}${critText}点${type}伤害`, 'damage');
     }
@@ -486,15 +486,81 @@ class Character {
             source: source
         });
 
-        if (amount >= this.currentHp) {
-            const immuneEffects = this.statusEffects.filter(e => e.isImmuneDeath);
-            if (immuneEffects.length > 0) {
-                // 消耗一次免疫致命伤
-                const immuneEffect = immuneEffects[0];
+        let isFatalDamage = amount >= this.currentHp;
+        
+        if (isFatalDamage) {
+            // 触发致命伤害前事件
+            const beforeFatalResult = this.trigger('before_fatal_damage', {
+                damage: amount,
+                damageType: type,
+                source: source
+            });
+            
+            // 如果事件被取消，直接返回
+            if (beforeFatalResult.cancelled) {
+                return true;
+            }
+            
+            // 特殊处理：逾柿的"眼的回想"buff
+            if (this.name === "逾柿" && this.gameState) {
+                // 检查"眼的回想"buff是否存在
+                let eyeRecallEffect = this.statusEffects.find(e => e.name === "眼的回想");
+                
+                // 如果不存在，检查条件并创建
+                if (!eyeRecallEffect) {
+                    // 检查所有上场队友是否全部存活（不包括逾柿自己）
+                    const allAllies = this.gameState.getAllies();
+                    const aliveAllies = allAllies.filter(c => c.currentHp > 0 && c !== this);
+                    const totalOtherAllies = allAllies.filter(c => c !== this).length;
+                    
+                    // 如果除逾柿外的所有队友都存活，则创建buff
+                    const allAlive = aliveAllies.length === totalOtherAllies && totalOtherAllies > 0;
+                    
+                    if (allAlive) {
+                        // 创建"眼的回想"buff，持续时间无限，带一次免疫致命伤害
+                        eyeRecallEffect = new StatusEffect("眼的回想", 999);
+                        eyeRecallEffect.turnType = 'self';
+                        eyeRecallEffect.triggerTime = 'end';
+                        eyeRecallEffect.owner = this;
+                        eyeRecallEffect.isImmuneDeath = true;
+                        eyeRecallEffect.value = 1; // 免疫次数：1次
+                        eyeRecallEffect.appliedTurn = this.gameState?.turnCount || 0;
+                        // 设置 shouldDecrease 为 false，使其不会减少持续时间
+                        eyeRecallEffect.shouldDecrease = function() { return false; };
+                        this.statusEffects.push(eyeRecallEffect);
+                        
+                        this.Log(`${this.name} 获得【眼的回想】状态！`, 'buff');
+                    }
+                }
+                
+                // 检测"眼的回想"buff的免疫是否可用（全局一次）
+                if (eyeRecallEffect && eyeRecallEffect.isImmuneDeath && 
+                    (eyeRecallEffect.value === undefined || eyeRecallEffect.value > 0)) {
+                    // 触发免疫，锁血为1
+                    eyeRecallEffect.value = (eyeRecallEffect.value || 1) - 1;
+                    
+                    // 免疫次数用完后，移除免疫效果标记但保留buff
+                    if (eyeRecallEffect.value <= 0) {
+                        eyeRecallEffect.isImmuneDeath = false;
+                    }
+                    
+                    this.currentHp = 1;
+                    this.Log(`${this.name} 的【眼的回想】触发！免疫致命伤害，血量保持在1`, 'buff');
+                    return true;
+                }
+            }
+            
+            // 检查其他免疫死亡状态
+            const otherImmuneEffects = this.statusEffects.filter(e => e.isImmuneDeath && 
+                e.name !== "眼的回想" && (e.value === undefined || e.value > 0));
+            
+            if (otherImmuneEffects.length > 0) {
+                const immuneEffect = otherImmuneEffects[0];
                 if (immuneEffect.value === undefined || immuneEffect.value > 0) {
                     immuneEffect.value = (immuneEffect.value || 1) - 1;
+                    
                     if (immuneEffect.value <= 0) {
-                        // 移除效果
+                        // 其他免疫效果，移除整个效果
                         this.statusEffects = this.statusEffects.filter(e => e !== immuneEffect);
                     }
                     this.currentHp = 1;
@@ -506,16 +572,25 @@ class Character {
 
         this.currentHp = Math.max(0, this.currentHp - amount);
         const survived = this.currentHp > 0;
-        // 检测友方死亡，触发被动技能
-        if (!survived && this.type === 'ally' && this.gameState) {
-            // 检查是否有荒弥在场，触发被动技能
-            const huangmi = this.gameState.characters.find(c =>
-                c.name === "荒弥" && c.currentHp > 0 && c.passiveSkills && c.passiveSkills.limpingAlone
-            );
-
-            if (huangmi && huangmi.passiveSkills.limpingAlone) {
-                huangmi.passiveSkills.limpingAlone.onAllyDeath(huangmi, this, this.gameState.characters);
-            }
+        
+        // 检测角色死亡 - 使用事件系统
+        if (!survived && this.gameState) {
+            // 触发角色死亡事件
+            this.trigger('character_death', {
+                source: source,
+                damageType: type,
+                killedBy: source,
+                isAlly: this.type === 'ally'
+            });
+            
+            // 同时触发全局角色死亡事件
+            window.eventSystem.trigger('character_death', {
+                character: this,
+                source: source,
+                damageType: type,
+                killedBy: source,
+                isAlly: this.type === 'ally'
+            });
         }
 
         this.trigger('take_damage', {
@@ -540,6 +615,11 @@ class Character {
 
     // Character.js - 添加完整的伤害计算方法
     calculateDamage(baseDamage, damageType, skillType, target, isBreakDamage = false) {
+        // 纯粹伤害（PURE）类型：直接返回原始伤害，不受任何减免影响
+        if (damageType === DamageType.PURE) {
+            return Math.floor(baseDamage);
+        }
+
         // === 1. 基础伤害区 ===
         const baseDamageArea = baseDamage;
 
@@ -657,6 +737,15 @@ class Character {
             vulnerability += effect.vulnerability || 0;
             vulnerability += effect.damageTakenBonus || 0;
         });
+        
+        // 该隐印记：对敌方施加负面效果强度加20%
+        // 这里处理该隐印记持有者攻击时，对敌方的负面效果强度加成
+        const cainMark = this.statusEffects.find(e => e.name === "该隐印记");
+        if (cainMark && cainMark.value > 0 && target.type === 'enemy') {
+            // 对易伤效果增加20%强度
+            vulnerability *= 1.2;
+        }
+        
         return 1 + vulnerability;
     }
 

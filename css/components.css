@@ -532,6 +532,170 @@ button.reset {
     background: linear-gradient(135deg, #ff4d7a, #ff8e53);
 }
 
+/* Tooltip样式 */
+.character-tooltip {
+    position: fixed;
+    background: rgba(20, 20, 40, 0.95);
+    border: 2px solid #5d7cff;
+    border-radius: 10px;
+    padding: 12px;
+    min-width: 280px;
+    max-width: 350px;
+    max-height: 500px;
+    overflow-y: auto;
+    z-index: 10000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    pointer-events: auto;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #e0e0ff;
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(93, 124, 255, 0.3);
+}
+
+.tooltip-icon {
+    font-size: 2rem;
+}
+
+.tooltip-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #ffd700;
+}
+
+.tooltip-tag {
+    font-size: 0.75rem;
+    color: #b0b0ff;
+    margin-top: 2px;
+}
+
+.tooltip-section {
+    margin-top: 10px;
+}
+
+.tooltip-section-title {
+    font-weight: bold;
+    color: #5d7cff;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.tooltip-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.tooltip-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+}
+
+.stat-label {
+    color: #b0b0ff;
+}
+
+.stat-value {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.stat-diff {
+    color: #00ff88;
+    font-size: 0.8rem;
+    margin-left: 5px;
+}
+
+.tooltip-effects {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* 美化滚动条 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(93, 124, 255, 0.5) rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-effects::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tooltip-effects::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+.tooltip-effects::-webkit-scrollbar-thumb {
+    background: rgba(93, 124, 255, 0.5);
+    border-radius: 3px;
+}
+
+.tooltip-effects::-webkit-scrollbar-thumb:hover {
+    background: rgba(93, 124, 255, 0.7);
+}
+
+.tooltip-effect {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tooltip-effect.buff-effect {
+    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(167, 139, 250, 0.1);
+}
+
+.tooltip-effect.debuff-effect {
+    border-color: rgba(255, 77, 122, 0.5);
+    background: rgba(255, 77, 122, 0.1);
+}
+
+.effect-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.effect-name {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.effect-duration {
+    font-size: 0.75rem;
+    color: #b0b0ff;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.effect-details {
+    font-size: 0.8rem;
+    color: #b0b0ff;
+    margin-top: 4px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.effect-value {
+    font-size: 0.75rem;
+    color: #00ff88;
+    margin-top: 4px;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .characters {
@@ -540,5 +704,11 @@ button.reset {
     
     .skills {
         grid-template-columns: 1fr;
+    }
+
+    .character-tooltip {
+        min-width: 250px;
+        max-width: 300px;
+        font-size: 0.8rem;
     }
 }

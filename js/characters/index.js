@@ -29,6 +29,7 @@
         // 注册模板（不创建实例）
         maybeRegisterTemplate("registerFangsuan");
         maybeRegisterTemplate("registerHuangmi");
+        maybeRegisterTemplate("registerYushi");
 
         // === 敌方角色 ===
         maybeRegisterTemplate("registerAntimatterLegion");

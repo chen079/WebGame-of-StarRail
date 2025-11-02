@@ -3,6 +3,7 @@
     const FangsuanTemplate = {
         name: "钫酸",
         type: "ally",
+        tag: "knight",
         maxHp: 4213,
         attack: 4337,
         defense: 1200,

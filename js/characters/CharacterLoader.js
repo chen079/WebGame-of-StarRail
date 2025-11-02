@@ -64,15 +64,27 @@ class CharacterLoader {
             template.image || "",
         );
         
+        // 复制tag属性（如果模板中有定义）
+        if (template.tag !== undefined) {
+            character.tag = template.tag;
+        }
+        
         // 添加被动技能（如果模板中有定义）
         if (template.passiveSkills) {
+            // 深拷贝被动技能，但需要从原始模板中获取函数引用
             character.passiveSkills = JSON.parse(JSON.stringify(template.passiveSkills));
-            // 绑定上下文到被动技能方法
-            if (character.passiveSkills && character.passiveSkills.limpingAlone) {
-                const limpingAlone = character.passiveSkills.limpingAlone;
-                character.passiveSkills.limpingAlone.onAllyDeath = function(huangmi, deadAlly, allCharacters) {
-                    limpingAlone.onAllyDeath.call(limpingAlone, huangmi, deadAlly, allCharacters);
-                };
+            
+            // 从原始模板中保存函数引用（因为 JSON 序列化会丢失函数）
+            const templatePassiveSkills = template.passiveSkills;
+            
+            // 初始化事件监听器（如果存在 initializeEvents 方法）
+            // 支持逾柿和荒弥等角色的事件初始化
+            if (character.passiveSkills && character.passiveSkills.initializeEvents && templatePassiveSkills.initializeEvents) {
+                const initializeEvents = templatePassiveSkills.initializeEvents;
+                if (typeof initializeEvents === 'function') {
+                    // 在角色创建后初始化事件监听器
+                    initializeEvents.call(character.passiveSkills, character);
+                }
             }
         }
         
