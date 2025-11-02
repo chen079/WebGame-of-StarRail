@@ -14,9 +14,9 @@ class UIManager {
         const resetBtn = document.getElementById('reset-game');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
-            this.gameState.resetGame();
-            this.updateUI();
-        });
+                this.gameState.resetGame();
+                this.updateUI();
+            });
         } else {
             console.warn('reset-game按钮未找到，可能选人界面尚未切换');
         }
@@ -44,12 +44,12 @@ class UIManager {
     updateSpeedTrack() {
         const speedTrack = document.getElementById('speed-track');
         const speedTrackMarkers = document.getElementById('speed-track-markers');
-        
+
         if (!speedTrack) {
             console.warn('速度条元素 speed-track 未找到');
             return;
         }
-        
+
         if (!speedTrackMarkers) {
             console.warn('速度条标记容器 speed-track-markers 未找到');
             return;
@@ -57,13 +57,13 @@ class UIManager {
 
         // 获取所有存活角色
         const aliveCharacters = this.gameState.getAliveCharacters();
-        
+
         if (aliveCharacters.length === 0) {
             speedTrackMarkers.innerHTML = '';
             console.log('没有存活的角色，速度条为空');
             return;
         }
-        
+
         // 速度条长度为500，显示角色在0-500范围内的位置（使用模运算）
         const TRACK_LENGTH = 500;
 
@@ -81,20 +81,20 @@ class UIManager {
             if (typeof character.actionValue === 'undefined') {
                 character.actionValue = 0;
             }
-            
+
             // 计算角色在当前500段内的位置（0-100%）
             const currentSegmentValue = character.actionValue % TRACK_LENGTH;
             const position = Math.min(100, (currentSegmentValue / TRACK_LENGTH) * 100);
-            
+
             // 计算已经完成的圈数
             const completedLaps = Math.floor(character.actionValue / TRACK_LENGTH);
-            
+
             // 检查是否可以行动
             const canTakeAction = character.canTakeAction && character.canTakeAction();
-            
+
             // 尝试获取现有标记，如果不存在则创建新的
             let marker = existingMarkers.get(character.uuid);
-            
+
             if (!marker) {
                 // 创建新标记
                 marker = document.createElement('div');
@@ -115,7 +115,7 @@ class UIManager {
                 marker.appendChild(icon);
                 marker.appendChild(label);
                 speedTrackMarkers.appendChild(marker);
-                
+
                 // 初始位置设置（无动画）
                 marker.style.transition = 'none';
                 marker.style.left = `${position}%`;
@@ -127,22 +127,22 @@ class UIManager {
                 // 更新现有标记
                 existingMarkers.delete(character.uuid);
             }
-            
+
             // 更新标记的样式和类
             const classes = [`speed-track-marker`, character.type];
             if (character.isActive) classes.push('active');
             if (canTakeAction) classes.push('ready');
             marker.className = classes.join(' ');
-            
+
             // 使用requestAnimationFrame确保平滑更新
             requestAnimationFrame(() => {
                 marker.style.left = `${position}%`;
             });
-            
+
             const actualSpeed = character.getActualSpeed ? character.getActualSpeed() : (character.speed || 0);
             marker.title = `${character.name}\n行动值: ${Math.floor(character.actionValue)}\n当前段: ${Math.floor(currentSegmentValue)}/500\n已完成圈数: ${completedLaps}\n速度: ${actualSpeed}`;
         });
-        
+
         // 移除不再存在的标记（角色已死亡或离开）
         existingMarkers.forEach(marker => {
             marker.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -263,12 +263,10 @@ class UIManager {
 
         // 根据技能类型决定是否需要选择目标
         if (skill.requiresTargetSelection()) {
-            console.log(`技能需要选择目标，显示可点击目标`);
             this.selectedSkill = skill;
             this.updateUI(); // 更新UI以显示可点击的目标
         } else {
             // 不需要选择目标的技能直接执行
-            console.log(`技能不需要选择目标，直接执行`);
             this.executeSkill(skill, user);
         }
     }
@@ -386,7 +384,7 @@ class UIManager {
 
         this.selectedSkill = null; // 清除选中的技能
         this.gameState.checkGameEnd();
-        
+
         this.updateUI();
 
         // 正常情况：切换到下一个回合
@@ -499,233 +497,101 @@ class UIManager {
     // 设置tooltip功能
     setupTooltip(element, character) {
         let tooltip = null;
-        let showTimeout = null;
         let hideTimeout = null;
-        let moveHandler = null;
-        let tooltipEnterHandler = null;
-        let tooltipLeaveHandler = null;
 
-        // 清理函数
+        // 清理 tooltip
         const cleanup = () => {
-            if (showTimeout) {
-                clearTimeout(showTimeout);
-                showTimeout = null;
-            }
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
             }
-            if (tooltip) {
-                if (moveHandler && element) {
-                    element.removeEventListener('mousemove', moveHandler);
-                }
-                if (tooltipEnterHandler) {
-                    tooltip.removeEventListener('mouseenter', tooltipEnterHandler);
-                }
-                if (tooltipLeaveHandler) {
-                    tooltip.removeEventListener('mouseleave', tooltipLeaveHandler);
-                }
-                if (tooltip.parentNode) {
-                    tooltip.remove();
-                }
-                tooltip = null;
-                moveHandler = null;
-                tooltipEnterHandler = null;
-                tooltipLeaveHandler = null;
+            if (tooltip && tooltip._cleanupHandlers) {
+                tooltip._cleanupHandlers();
             }
-        };
-
-        // 隐藏tooltip函数
-        const hideTooltip = () => {
-            if (tooltip) {
-                if (moveHandler && element) {
-                    element.removeEventListener('mousemove', moveHandler);
-                    moveHandler = null;
-                }
-                if (tooltipEnterHandler) {
-                    tooltip.removeEventListener('mouseenter', tooltipEnterHandler);
-                    tooltipEnterHandler = null;
-                }
-                if (tooltipLeaveHandler) {
-                    tooltip.removeEventListener('mouseleave', tooltipLeaveHandler);
-                    tooltipLeaveHandler = null;
-                }
-                if (tooltip.parentNode) {
-                    tooltip.remove();
-                }
-                tooltip = null;
-            }
-        };
-
-        element.addEventListener('mouseenter', () => {
-            // 清除隐藏定时器
-            if (hideTimeout) {
-                clearTimeout(hideTimeout);
-                hideTimeout = null;
-            }
-
-            // 如果tooltip已经存在，不重复创建
             if (tooltip && tooltip.parentNode) {
-                return;
+                tooltip.remove();
             }
-
-            // 延迟显示tooltip，避免鼠标快速划过时闪烁
-            showTimeout = setTimeout(() => {
-                // 再次检查是否还需要显示（可能在延迟期间已经移开）
-                if (!element || !document.body.contains(element)) {
-                    return;
-                }
-
-                // 创建tooltip元素
-                tooltip = document.createElement('div');
-                tooltip.className = 'character-tooltip';
-                tooltip.innerHTML = this.battleRenderer.createCharacterTooltip(character);
-                document.body.appendChild(tooltip);
-
-                // 计算tooltip位置
-                const updatePosition = () => {
-                    if (!tooltip || !element || !document.body.contains(element)) {
-                        return;
-                    }
-                    const rect = element.getBoundingClientRect();
-                    const tooltipRect = tooltip.getBoundingClientRect();
-                    const margin = 10;
-
-                    let left = rect.right + margin;
-                    let top = rect.top;
-
-                    // 如果右侧空间不足，显示在左侧
-                    if (left + tooltipRect.width > window.innerWidth) {
-                        left = rect.left - tooltipRect.width - margin;
-                    }
-
-                    // 如果下方空间不足，向上移动
-                    if (top + tooltipRect.height > window.innerHeight) {
-                        top = window.innerHeight - tooltipRect.height - margin;
-                    }
-
-                    // 确保不超出左边界和上边界
-                    if (left < 0) left = margin;
-                    if (top < 0) top = margin;
-
-                    tooltip.style.left = left + 'px';
-                    tooltip.style.top = top + 'px';
-                };
-
-                updatePosition();
-                
-                // 鼠标移动时更新位置
-                moveHandler = () => updatePosition();
-                element.addEventListener('mousemove', moveHandler);
-
-                // 为tooltip添加鼠标事件（只添加一次）
-                tooltipEnterHandler = () => {
-                    if (hideTimeout) {
-                        clearTimeout(hideTimeout);
-                        hideTimeout = null;
-                    }
-                };
-
-                tooltipLeaveHandler = () => {
-                    hideTooltip();
-                };
-
-                tooltip.addEventListener('mouseenter', tooltipEnterHandler);
-                tooltip.addEventListener('mouseleave', tooltipLeaveHandler);
-
-                showTimeout = null;
-            }, 300);
-        });
-
-        element.addEventListener('mouseleave', () => {
-            // 清除显示定时器
-            if (showTimeout) {
-                clearTimeout(showTimeout);
-                showTimeout = null;
-            }
-
-            // 延迟隐藏tooltip，给用户时间移动到tooltip上
-            if (tooltip && tooltip.parentNode) {
-                hideTimeout = setTimeout(() => {
-                    hideTooltip();
-                }, 200);
-            }
-        });
-
-        // 全局事件处理器
-        const globalMouseLeaveHandler = () => {
-            cleanup();
+            tooltip = null;
         };
 
+        // 显示 tooltip
+        const showTooltip = (e) => {
+            e.stopPropagation();
+
+            // 如果已有 tooltip，先清理旧的（防止重复）
+            if (tooltip) cleanup();
+
+            // 创建 tooltip
+            tooltip = document.createElement('div');
+            tooltip.className = 'character-tooltip';
+            tooltip.innerHTML = this.battleRenderer.createCharacterTooltip(character);
+            document.body.appendChild(tooltip);
+
+            // 计算位置
+            const rect = element.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const margin = 10;
+            let left = rect.right + margin;
+            let top = rect.top;
+
+            // 防止出屏幕
+            if (left + tooltipRect.width > window.innerWidth) {
+                left = rect.left - tooltipRect.width - margin;
+            }
+            if (top + tooltipRect.height > window.innerHeight) {
+                top = window.innerHeight - tooltipRect.height - margin;
+            }
+            if (left < 0) left = margin;
+            if (top < 0) top = margin;
+
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+
+            // ===== 悬停保持逻辑 =====
+            const startHideTimer = () => {
+                if (hideTimeout) clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(() => cleanup(), 200);
+            };
+
+            const cancelHideTimer = () => {
+                if (hideTimeout) {
+                    clearTimeout(hideTimeout);
+                    hideTimeout = null;
+                }
+            };
+
+            element.addEventListener('mouseleave', startHideTimer);
+            element.addEventListener('mouseenter', cancelHideTimer);
+            tooltip.addEventListener('mouseenter', cancelHideTimer);
+            tooltip.addEventListener('mouseleave', startHideTimer);
+
+            tooltip._cleanupHandlers = () => {
+                element.removeEventListener('mouseleave', startHideTimer);
+                element.removeEventListener('mouseenter', cancelHideTimer);
+                tooltip.removeEventListener('mouseenter', cancelHideTimer);
+                tooltip.removeEventListener('mouseleave', startHideTimer);
+            };
+        };
+
+        // ✅ 改成“双击”事件触发
+        element.addEventListener('dblclick', showTooltip);
+
+        // 点击外部关闭
         const globalClickHandler = (e) => {
-            // 如果点击的不是元素或tooltip，隐藏tooltip
             if (tooltip && !element.contains(e.target) && !tooltip.contains(e.target)) {
                 cleanup();
             }
         };
 
-        const globalScrollHandler = (e) => {
-            // 只在tooltip外部滚动时隐藏tooltip
-            if (tooltip && e.target) {
-                // 检查滚动是否发生在tooltip内部
-                let scrollTarget = e.target;
-                let isInsideTooltip = false;
-                
-                // 向上遍历DOM树，检查是否在tooltip内
-                while (scrollTarget && scrollTarget !== document.body) {
-                    if (scrollTarget === tooltip || (tooltip.contains && tooltip.contains(scrollTarget))) {
-                        isInsideTooltip = true;
-                        break;
-                    }
-                    scrollTarget = scrollTarget.parentElement;
-                }
-                
-                // 只有当滚动发生在tooltip外部时才关闭
-                if (!isInsideTooltip) {
-                    cleanup();
-                }
-            } else if (tooltip) {
-                // 如果无法确定滚动目标，检查是否鼠标在tooltip内
-                const tooltipRect = tooltip.getBoundingClientRect();
-                const mouseX = e.clientX || 0;
-                const mouseY = e.clientY || 0;
-                const isMouseInTooltip = (
-                    mouseX >= tooltipRect.left &&
-                    mouseX <= tooltipRect.right &&
-                    mouseY >= tooltipRect.top &&
-                    mouseY <= tooltipRect.bottom
-                );
-                
-                // 如果鼠标不在tooltip内，则关闭
-                if (!isMouseInTooltip) {
-                    cleanup();
-                }
-            }
-        };
+        document.addEventListener('click', globalClickHandler);
 
-        const globalResizeHandler = () => {
-            if (tooltip) {
-                cleanup();
-            }
-        };
-
-        window.addEventListener('blur', globalMouseLeaveHandler);
-        document.addEventListener('mouseleave', globalMouseLeaveHandler);
-        document.addEventListener('click', globalClickHandler, true);
-        // 使用wheel事件替代scroll事件，更准确地捕获滚动意图
-        window.addEventListener('wheel', globalScrollHandler, { passive: true });
-        window.addEventListener('resize', globalResizeHandler);
-
-        // 在元素上存储清理函数，以便在元素被移除时调用
+        // 存储清理函数
         element._tooltipCleanup = cleanup;
         element._tooltipGlobalCleanup = () => {
-            window.removeEventListener('blur', globalMouseLeaveHandler);
-            document.removeEventListener('mouseleave', globalMouseLeaveHandler);
-            document.removeEventListener('click', globalClickHandler, true);
-            window.removeEventListener('wheel', globalScrollHandler);
-            window.removeEventListener('resize', globalResizeHandler);
+            document.removeEventListener('click', globalClickHandler);
         };
     }
+
 }
 
 window.UIManager = UIManager;

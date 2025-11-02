@@ -16,13 +16,13 @@
         skills: [
             {
                 name: "量子共鸣",
-                description: "对敌方单体造成2000+300%攻击力的伤害。释放技能后，持续到本局结束。当友方造成伤害时，有90%概率附加1000+100%攻击力的伤害",
+                description: "对敌方单体造成 2000 + 300% 攻击力的伤害。释放技能后，持续到本局结束。当友方造成伤害时，有 90% 概率附加 1000+100%攻击力的伤害",
                 targetType: TargetType.SINGLE,
                 skillType: SkillType.BASIC,
                 damageType: DamageType.QUANTUM,
                 tags: [SkillTag.ATTACK, SkillTag.SINGLE_TARGET],
                 icon: "⚔️",
-                PointCost: -3,
+                PointCost: -1,
                 executeFunc: function (user, target, allCharacters) {
                     // 1. 先执行基础攻击
                     user.Attack("SINGLE", "attack", [2000], [3.0], target, DamageType.QUANTUM, [DamageStyle.BASIC]);
@@ -91,11 +91,12 @@
                 executeFunc: function (user, target, allCharacters) {
                     // 使用完善后的 addStatusEffect 方法
                     user.addStatusEffect("无敌之王的加冕", "immune", true, 3, 'self', 'end');
-                    user.addStatusEffect("圣剑的祝福", "damageBonus", 15, 3, 'self', 'end');
+                    user.addStatusEffect("圣剑的祝福", "damageBonus", 3, 3, 'self', 'end');
 
                     allCharacters.forEach(c => {
                         if (c.type === 'enemy') {
                             c.addStatusEffect("死之剑的诅咒", "damageTakenBonus", 1.0, 3, 'self', 'end');
+                            c.addStatusEffect("死之剑的葬送", "critRateDown", 0.2, 3, 'self', 'end');
                         }
                     });
 

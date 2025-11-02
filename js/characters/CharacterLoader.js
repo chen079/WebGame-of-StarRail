@@ -63,20 +63,20 @@ class CharacterLoader {
             template.icon,
             template.image || "",
         );
-        
+
         // 复制tag属性（如果模板中有定义）
         if (template.tag !== undefined) {
             character.tag = template.tag;
         }
-        
+
         // 添加被动技能（如果模板中有定义）
         if (template.passiveSkills) {
             // 深拷贝被动技能，但需要从原始模板中获取函数引用
             character.passiveSkills = JSON.parse(JSON.stringify(template.passiveSkills));
-            
+
             // 从原始模板中保存函数引用（因为 JSON 序列化会丢失函数）
             const templatePassiveSkills = template.passiveSkills;
-            
+
             // 初始化事件监听器（如果存在 initializeEvents 方法）
             // 支持逾柿和荒弥等角色的事件初始化
             if (character.passiveSkills && character.passiveSkills.initializeEvents && templatePassiveSkills.initializeEvents) {
@@ -87,7 +87,7 @@ class CharacterLoader {
                 }
             }
         }
-        
+
         return character;
     }
 
@@ -98,6 +98,28 @@ class CharacterLoader {
             if (character) characters.push(character);
         }
         return characters;
+    }
+
+    // === 新增：动态加载角色文件 ===
+    async loadCharacterFiles(files = []) {
+        for (const file of files) {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // 自动注册全局模板变量
+        files.forEach(file => {
+            const name = file.split('/').pop().replace('.js', '');
+            const globalVar = `${name}Template`;
+            if (window[globalVar]) {
+                this.registerCharacterTemplate(name, window[globalVar]);
+            }
+        });
     }
 }
 

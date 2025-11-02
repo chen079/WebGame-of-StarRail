@@ -1,6 +1,6 @@
 (function () {
     // ===== 角色模板 =====
-    const FangsuanTemplate = {
+    const HuangmiTemplate = {
         name: "荒弥",
         type: "ally",
         tag: "knight",
@@ -387,10 +387,10 @@
         }
     };
 
-    window.FangsuanTemplate = FangsuanTemplate;
+    window.HuangmiTemplate = HuangmiTemplate;
 
     window.registerHuangmi = function (loader) {
-        loader.registerCharacterTemplate("Huangmi", FangsuanTemplate);
+        loader.registerCharacterTemplate("Huangmi", HuangmiTemplate);
         // 不创建实例，只注册模板
         // 被动技能会在createCharacter时通过模板添加
     };
