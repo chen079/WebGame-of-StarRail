@@ -3,6 +3,10 @@ class Character {
         // 生成唯一UUID
         this.uuid = this.generateUUID();
 
+        this.equipment = new CharacterEquipment(this);
+        this.relicStats = {}; // 存储遗器提供的属性
+        this.eidolonEffects = {}; // 存储星魂效果
+
         this.name = name;
         this.type = type;
         this.level = level;
@@ -63,15 +67,21 @@ class Character {
     }
 
     // 获取实际攻击力（考虑各种加成）
+    // 获取实际攻击力（考虑各种加成）
     getActualAttack() {
         let attackBonus = this.attackPercent;
 
         // 从状态效果中获取攻击加成
         this.statusEffects.forEach(effect => {
             if (effect.attackBonus) attackBonus += effect.attackBonus;
+            if (effect.attackPercent) attackBonus += effect.attackPercent;
         });
 
-        return this.baseAttack * (1 + attackBonus);
+        // 基础攻击力 × (1 + 百分比加成) + 遗器提供的固定攻击力
+        const baseAttack = this.baseAttack * (1 + attackBonus);
+        const relicAttack = this.relicStats?.attack || 0;
+
+        return baseAttack + relicAttack;
     }
 
     // 获取实际防御力
@@ -81,21 +91,62 @@ class Character {
 
         this.statusEffects.forEach(effect => {
             if (effect.defenseBonus) defenseBonus += effect.defenseBonus;
+            if (effect.defensePercent) defenseBonus += effect.defensePercent;
             if (effect.defenseReduction) defenseReduction += effect.defenseReduction;
         });
 
-        return this.baseDefense * (1 + defenseBonus) * (1 - defenseReduction);
+        // 基础防御力 × (1 + 百分比加成) × (1 - 防御减免) + 遗器提供的固定防御力
+        const baseDefense = this.baseDefense * (1 + defenseBonus) * (1 - defenseReduction);
+        const relicDefense = this.relicStats?.defense || 0;
+
+        return baseDefense + relicDefense;
     }
 
-    // 获取实际速度（考虑状态效果）
+    // 获取实际速度（考虑状态效果和遗器）
     getActualSpeed() {
         let totalSpeed = this.speed;
+
+        // 状态效果提供的速度加成
         this.statusEffects.forEach(effect => {
-            if (effect.speedBonus) {
-                totalSpeed += effect.speedBonus;
-            }
+            if (effect.speedBonus) totalSpeed += effect.speedBonus;
         });
-        return Math.max(1, totalSpeed); // 速度至少为1
+
+        // 遗器提供的速度加成
+        const relicSpeed = this.relicStats?.speed || 0;
+
+        return Math.max(1, totalSpeed + relicSpeed);
+    }
+
+    // 获取实际生命值（考虑状态效果和遗器）
+    getActualMaxHp() {
+        let hpBonus = 0;
+
+        // 从状态效果中获取生命值加成
+        this.statusEffects.forEach(effect => {
+            if (effect.hpBonus) hpBonus += effect.hpBonus;
+            if (effect.hpPercent) hpBonus += effect.hpPercent;
+        });
+
+        // 基础生命值 × (1 + 百分比加成) + 遗器提供的固定生命值
+        const baseHp = this.maxHp * (1 + hpBonus);
+        const relicHp = this.relicStats?.hp || 0;
+
+        return baseHp + relicHp;
+    }
+
+    // 获取当前生命值百分比
+    getHpPercent() {
+        const actualMaxHp = this.getActualMaxHp();
+        return actualMaxHp > 0 ? (this.currentHp / actualMaxHp) * 100 : 0;
+    }
+
+    // 获取生命值状态描述
+    getHpStatus() {
+        const percent = this.getHpPercent();
+        if (percent >= 70) return '健康';
+        if (percent >= 40) return '受伤';
+        if (percent >= 20) return '重伤';
+        return '濒死';
     }
 
     // 增加行动值
@@ -212,7 +263,7 @@ class Character {
             switch (baseStat) {
                 case "attack": return this.getActualAttack();
                 case "defense": return this.getActualDefense();
-                case "maxHp": return this.maxHp;
+                case "maxHp": return this.getActualMaxHp();
                 case "currentHp": return this.currentHp;
                 default: return this.getActualAttack();
             }
@@ -487,7 +538,7 @@ class Character {
         });
 
         let isFatalDamage = amount >= this.currentHp;
-        
+
         if (isFatalDamage) {
             // 触发致命伤害前事件
             const beforeFatalResult = this.trigger('before_fatal_damage', {
@@ -495,27 +546,27 @@ class Character {
                 damageType: type,
                 source: source
             });
-            
+
             // 如果事件被取消，直接返回
             if (beforeFatalResult.cancelled) {
                 return true;
             }
-            
+
             // 特殊处理：逾柿的"眼的回想"buff
             if (this.name === "逾柿" && this.gameState) {
                 // 检查"眼的回想"buff是否存在
                 let eyeRecallEffect = this.statusEffects.find(e => e.name === "眼的回想");
-                
+
                 // 如果不存在，检查条件并创建
                 if (!eyeRecallEffect) {
                     // 检查所有上场队友是否全部存活（不包括逾柿自己）
                     const allAllies = this.gameState.getAllies();
                     const aliveAllies = allAllies.filter(c => c.currentHp > 0 && c !== this);
                     const totalOtherAllies = allAllies.filter(c => c !== this).length;
-                    
+
                     // 如果除逾柿外的所有队友都存活，则创建buff
                     const allAlive = aliveAllies.length === totalOtherAllies && totalOtherAllies > 0;
-                    
+
                     if (allAlive) {
                         // 创建"眼的回想"buff，持续时间无限，带一次免疫致命伤害
                         eyeRecallEffect = new StatusEffect("眼的回想", 999);
@@ -526,39 +577,39 @@ class Character {
                         eyeRecallEffect.value = 1; // 免疫次数：1次
                         eyeRecallEffect.appliedTurn = this.gameState?.turnCount || 0;
                         // 设置 shouldDecrease 为 false，使其不会减少持续时间
-                        eyeRecallEffect.shouldDecrease = function() { return false; };
+                        eyeRecallEffect.shouldDecrease = function () { return false; };
                         this.statusEffects.push(eyeRecallEffect);
-                        
+
                         this.Log(`${this.name} 获得【眼的回想】状态！`, 'buff');
                     }
                 }
-                
+
                 // 检测"眼的回想"buff的免疫是否可用（全局一次）
-                if (eyeRecallEffect && eyeRecallEffect.isImmuneDeath && 
+                if (eyeRecallEffect && eyeRecallEffect.isImmuneDeath &&
                     (eyeRecallEffect.value === undefined || eyeRecallEffect.value > 0)) {
                     // 触发免疫，锁血为1
                     eyeRecallEffect.value = (eyeRecallEffect.value || 1) - 1;
-                    
+
                     // 免疫次数用完后，移除免疫效果标记但保留buff
                     if (eyeRecallEffect.value <= 0) {
                         eyeRecallEffect.isImmuneDeath = false;
                     }
-                    
+
                     this.currentHp = 1;
                     this.Log(`${this.name} 的【眼的回想】触发！免疫致命伤害，血量保持在1`, 'buff');
                     return true;
                 }
             }
-            
+
             // 检查其他免疫死亡状态
-            const otherImmuneEffects = this.statusEffects.filter(e => e.isImmuneDeath && 
+            const otherImmuneEffects = this.statusEffects.filter(e => e.isImmuneDeath &&
                 e.name !== "眼的回想" && (e.value === undefined || e.value > 0));
-            
+
             if (otherImmuneEffects.length > 0) {
                 const immuneEffect = otherImmuneEffects[0];
                 if (immuneEffect.value === undefined || immuneEffect.value > 0) {
                     immuneEffect.value = (immuneEffect.value || 1) - 1;
-                    
+
                     if (immuneEffect.value <= 0) {
                         // 其他免疫效果，移除整个效果
                         this.statusEffects = this.statusEffects.filter(e => e !== immuneEffect);
@@ -572,7 +623,7 @@ class Character {
 
         this.currentHp = Math.max(0, this.currentHp - amount);
         const survived = this.currentHp > 0;
-        
+
         // 检测角色死亡 - 使用事件系统
         if (!survived && this.gameState) {
             // 触发角色死亡事件
@@ -582,7 +633,7 @@ class Character {
                 killedBy: source,
                 isAlly: this.type === 'ally'
             });
-            
+
             // 同时触发全局角色死亡事件
             window.eventSystem.trigger('character_death', {
                 character: this,
@@ -737,7 +788,7 @@ class Character {
             vulnerability += effect.vulnerability || 0;
             vulnerability += effect.damageTakenBonus || 0;
         });
-        
+
         // 该隐印记：对敌方施加负面效果强度加20%
         // 这里处理该隐印记持有者攻击时，对敌方的负面效果强度加成
         const cainMark = this.statusEffects.find(e => e.name === "该隐印记");
@@ -745,7 +796,7 @@ class Character {
             // 对易伤效果增加20%强度
             vulnerability *= 1.2;
         }
-        
+
         return 1 + vulnerability;
     }
 

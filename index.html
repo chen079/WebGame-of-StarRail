@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/selector.css">
+    <link rel="stylesheet" href="css/equipment.css">
 </head>
 
 <body>
@@ -57,6 +58,7 @@
                         </div>
                     </div>
                     <div class="controls">
+                        <button class="equipment-btn" id="equipment-btn">装备管理</button>
                         <button class="reset" id="reset-game">重新开始</button>
                     </div>
                 </div>
@@ -89,6 +91,11 @@
     <script src="js/game/Character.js"></script>
     <script src="js/game/GameState.js"></script>
 
+    <!-- ===== 装备系统 ===== -->
+    <script src="js/game/Relic.js"></script>
+    <script src="js/game/Eidolon.js"></script>
+    <script src="js/game/CharacterEquipment.js"></script>
+
     <!-- ===== 战斗系统 ===== -->
     <script src="js/battle/SkillExecutor.js"></script>
     <script src="js/battle/BattleSystem.js"></script>
@@ -102,6 +109,7 @@
     <script src="js/ui/BattleRenderer.js"></script>
     <script src="js/ui/SkillPanel.js"></script>
     <script src="js/ui/CharacterSelector.js"></script>
+    <script src="js/ui/EquipmentSelector.js"></script>
     <script src="js/ui/UIManager.js"></script>
 
     <script src="js/utils/Utils.js"></script>

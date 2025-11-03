@@ -31,6 +31,24 @@ document.addEventListener('DOMContentLoaded', async function () {
         const characterSelector = new CharacterSelector(characterLoader);
         characterSelector.init();
 
+        // 检查 EquipmentSelector 类是否已定义
+        if (typeof EquipmentSelector === 'undefined') {
+            console.error('EquipmentSelector 类未定义，请检查文件加载顺序');
+            // 临时创建一个空的 EquipmentSelector
+            window.EquipmentSelector = class EquipmentSelector {
+                constructor() {
+                    console.warn('使用空的 EquipmentSelector');
+                }
+                show() {
+                    console.warn('EquipmentSelector.show() 被调用但未实现');
+                }
+            };
+        }
+
+        // 初始化装备选择器
+        const equipmentSelector = new EquipmentSelector(characterLoader);
+        console.log('EquipmentSelector 初始化完成:', equipmentSelector);
+
         // 监听角色选择完成事件
         window.addEventListener('charactersSelected', function (event) {
             const selectedCharacters = event.detail.characters;
@@ -51,13 +69,24 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // 添加选中的友方角色
             selectedCharacters.forEach(character => {
-                if (character) gameState.addCharacter(character);
+                if (character) {
+                    // 确保每个角色都有装备系统
+                    if (!character.equipment) {
+                        character.equipment = new CharacterEquipment(character);
+                    }
+                    gameState.addCharacter(character);
+                }
             });
 
             // 添加敌方角色（固定5个正物质军团）
             for (let i = 0; i < 5; i++) {
                 const enemy = characterLoader.createCharacter("AntimatterLegion");
-                if (enemy) gameState.addCharacter(enemy);
+                if (enemy) {
+                    if (!enemy.equipment) {
+                        enemy.equipment = new CharacterEquipment(enemy);
+                    }
+                    gameState.addCharacter(enemy);
+                }
             }
 
             // 确保DOM元素存在后再初始化UI系统
@@ -66,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 gameState.initializeSpeedSystem();
 
                 // 初始化UI系统
-                const uiManager = new UIManager(gameState, battleSystem);
+                const uiManager = new UIManager(gameState, battleSystem, equipmentSelector);
                 uiManager.updateUI();
 
                 // 输出信息
@@ -80,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     battleSystem,
                     characterLoader,
                     uiManager,
+                    equipmentSelector,
                     characters: gameState.characters
                 };
             }, 50);
@@ -90,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // 暴露选人界面（用于调试）
         window.characterSelector = characterSelector;
+        window.equipmentSelector = equipmentSelector;
 
     } catch (error) {
         console.error('游戏初始化失败:', error);

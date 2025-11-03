@@ -21,9 +21,34 @@ class UIManager {
             console.warn('reset-game按钮未找到，可能选人界面尚未切换');
         }
 
-        // 移除目标选择面板的相关代码
+        const equipmentBtn = document.getElementById('equipment-btn');
+        if (equipmentBtn) {
+            equipmentBtn.addEventListener('click', () => {
+                this.showEquipmentSelector();
+            });
+        }
     }
+    showEquipmentSelector() {
+        // 安全检查
+        if (!window.equipmentSelector || typeof window.equipmentSelector.show !== 'function') {
+            console.error('EquipmentSelector 未正确初始化');
+            return;
+        }
 
+        // 获取当前行动的角色
+        const currentCharacter = this.gameState.characters[this.gameState.currentTurnIndex];
+        if (currentCharacter && currentCharacter.type === 'ally') {
+            window.equipmentSelector.show(currentCharacter);
+        } else {
+            // 如果没有当前行动角色，显示第一个友方角色
+            const allies = this.gameState.getAllies();
+            if (allies.length > 0) {
+                window.equipmentSelector.show(allies[0]);
+            } else {
+                console.warn('没有可装备的友方角色');
+            }
+        }
+    }
     updateUI() {
         this.updateSpeedTrack();
         this.updateCharacterDisplay();
