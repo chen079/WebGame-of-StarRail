@@ -1,9 +1,5 @@
 # WebGame-of-StarRail 🎮
 
-[中文](#中文) | [English](#english)
-
-## 中文
-
 网页版《崩铁》文字游戏项目，欢迎各位开发者共同参与开发！
 
 ### 项目简介
@@ -18,11 +14,18 @@
 - 🎨 精美的界面设计
 - 🔧 持续开发中
 
-### 未来计划
+### TODO LIST
 
-- 选人系统
-- 自定义角色游戏接口
-- 更加方便的编写技能函数
+- 选人系统✔
+- 自定义角色游戏接口✔
+- 更加方便的编写技能函数✔
+- 完善星魂系统✔
+- 完善遗器系统✔
+- 前后端分离（*工作量好大*）
+- UI美化✔
+- 制造一堆BUG✔
+- 完善所有函数逻辑
+- 用python重构然后爆炸✔
 - 修复一堆BUG
 
 ### 参与贡献
@@ -30,7 +33,7 @@
 我们非常欢迎并鼓励大家提交 Pull Request！无论你是想：
 - 修复bug
 - 优化游戏机制
-- 完善伤害计算系统
+- 重构游戏项目
 - 添加新功能
 - 改进代码结构
 
@@ -47,9 +50,9 @@
 ### 如何开始
 
 1. Fork 本仓库
-2. 创建你的功能分支 (`git checkout -b feature/AmazingFeature`)
+2. 创建你的功能分支 (`git checkout -b feature/PRFork`)
 3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
+4. 推送到分支 (`git push origin feature/PRFork`)
 5. 开启一个 Pull Request
 
 ### 技术栈
@@ -75,81 +78,3 @@
 ---
 
 *本项目为爱好者创作，仅供学习交流使用*
-
----
-
-## English
-
-# WebGame-of-StarRail 🎮
-
-Web-based Honkai: Star Rail Word fan game project, welcome all developers to join the development!
-
-### Project Introduction
-
-This is a fan-made web-based implementation of Honkai: Star Rail. Due to the challenging complexity of various damage calculation systems and multipliers in the game, we sincerely invite developers to collaborate and improve this project together.
-
-### Features
-
-- 🌟 Web-based Honkai: Star Rail fan game
-- ⚡ Real-time combat system
-- 🎯 Complex damage multiplier calculations
-- 🎨 Beautiful interface design
-- 🔧 Continuously under development
-
-### Future Plans
-
-- Character Selection System
-- Custom Character Game Interface
-- More Convenient Skill Function Development
-- Fix Numerous Bugs
-  
-### Contributing
-
-We highly welcome and encourage everyone to submit Pull Requests! Whether you want to:
-- Fix bugs
-- Optimize game mechanics
-- Improve damage calculation systems
-- Add new features
-- Enhance code structure
-
-Feel free to submit your code contributions at any time!
-
-### Development Status
-
-The project is currently under active development, with main challenges including:
-- Complex damage multiplier calculation systems
-- Character skill mechanism implementation
-- Combat system balance adjustments
-- Interface interaction optimization
-
-### Getting Started
-
-1. Fork this repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Tech Stack
-
-- HTML5 / CSS3 / JavaScript
-- Frontend Framework (TBD)
-- Game Engine (TBD)
-- Other related technologies
-
-## Legal Disclaimer
-
-This project is a fan-made creation inspired by Honkai: Star Rail, intended for learning and research purposes only.
-
-- This project is not an official product and is not affiliated with miHoYo (HoYoverse)
-- Does not contain any official game assets or resources
-- Completely free and open-source, not for any commercial use
-- If there are any copyright concerns, please contact us immediately for resolution
-
-### Acknowledgments
-
-Thank you to all developers who contribute to this project! Let's make this project better together! 🐾✨
-
----
-
-*This project is created by fans for learning and communication purposes only*
